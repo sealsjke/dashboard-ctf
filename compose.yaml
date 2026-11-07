@@ -1,0 +1,13 @@
+name: omctf
+
+services:
+  dashboard:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      SOURCE_URL: ${SOURCE_URL:-https://board-academy.ad.omctf.ru}
+      POLL_MS: ${POLL_MS:-5000}
+      AUTH_USER: ${AUTH_USER:-smd}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-kapusta666}
+    restart: unless-stopped

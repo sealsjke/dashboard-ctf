@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1b">
+  <title>OmCTF // Live Analytics</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/login.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">✳</span><span><strong>OMCTF</strong><small>LIVE ANALYTICS</small></span></div>
+    <nav aria-label="Разделы"><button data-tab="live" class="active">Эфир</button><button data-tab="attacks">Атаки</button><button data-tab="defense">Защита</button><button data-tab="ours" class="our-tab">smd</button><button data-tab="teams">Команды</button><a class="nav-link" href="https://visual-academy.ad.omctf.ru/" target="_blank" rel="noreferrer">Общий визуал ↗</a></nav>
+    <div class="top-status"><span id="connection" class="connection">Подключение</span><span class="round-label">РАУНД <b id="header-round">—</b></span><span class="timer" id="timer">—:—</span><button id="logout" class="logout" type="button">Выйти</button></div>
+  </header>
+  <main>
+    <div class="page-heading"><div><p class="eyebrow">ACADEMY / 2026</p><h1 id="page-title">Пульс соревнования</h1><p class="subtitle" id="game-name">Загрузка данных…</p></div><div class="updated" id="updated">Ожидание обновления</div></div>
+    <div id="notice" class="notice" hidden></div>
+    <section id="live-view" class="view active">
+      <div id="live-kpis" class="kpi-grid"></div>
+      <div class="live-grid">
+        <section class="panel feed-panel"><div class="panel-head"><div><span class="accent cyan"></span><h2>Лента атак</h2></div><span id="feed-count" class="panel-note"></span></div><div id="feed" class="feed"></div></section>
+        <section class="panel chart-panel"><div class="panel-head"><div><span class="accent pink"></span><h2>Флаги по раундам</h2></div><span class="panel-note">последние 30</span></div><div id="round-chart" class="round-chart"></div><div id="chart-legend" class="legend"></div></section>
+        <section class="panel leaderboard-panel"><div class="panel-head"><div><span class="accent gold"></span><h2>Топ атакующих</h2></div><span class="panel-note">последние 10 раундов</span></div><div id="top-attackers"></div></section>
+        <section class="panel health-panel"><div class="panel-head"><div><span class="accent green"></span><h2>Состояние сервисов</h2></div><span class="panel-note">последняя проверка</span></div><div id="health"></div></section>
+        <section class="panel services-panel"><div class="panel-head"><div><span class="accent violet"></span><h2>Атаки по сервисам</h2></div><span class="panel-note">последние 10 раундов</span></div><div id="services"></div></section>
+        <section class="panel orbit-panel"><div class="panel-head"><div><span class="accent cyan"></span><h2>Круговая диаграмма атак</h2></div><span class="panel-note">доля украденных флагов · последние 10 раундов</span></div><div id="attack-circle"></div></section>
+      </div>
+    </section>
+    <section id="attacks-view" class="view">
+      <div class="filterbar"><div class="filter-label">СЕРВИС</div><div id="service-filters" class="chips"></div><div class="filter-label window-label">ПЕРИОД</div><div id="window-filters" class="chips"><button data-window="1">1</button><button data-window="5">5</button><button data-window="10" class="active">10</button><button data-window="30">30</button></div></div>
+      <div id="attack-kpis" class="kpi-grid attacks-kpis"></div>
+      <div class="attack-grid"><section class="panel matrix-panel"><div class="panel-head"><div><span class="accent cyan"></span><h2>Матрица атак</h2></div><span class="panel-note">атакующий ↓ · жертва →</span></div><div id="matrix" class="matrix-wrap"></div></section><div class="attack-side"><section class="panel exploits-panel"><div class="panel-head"><div><span class="accent green"></span><h2>У кого работают эксплойты</h2></div><span class="panel-note">до 30 раундов · свечение: 3</span></div><div id="exploits" class="exploits-wrap"></div></section><section class="panel flows-panel"><div class="panel-head"><div><span class="accent gold"></span><h2>Крупнейшие потоки</h2></div><span class="panel-note">атакующий → жертва</span></div><div id="flows"></div></section></div></div>
+    </section>
+    <section id="defense-view" class="view">
+      <div class="filterbar defense-filter"><div class="filter-label">ИТОГО ЗА РАУНДЫ</div><div id="defense-window-filters" class="chips"><button data-window="1">1</button><button data-window="5">5</button><button data-window="10">10</button><button data-window="30" class="active">30</button></div></div>
+      <section class="panel defense-panel"><div class="panel-head"><div><span class="accent green"></span><h2>У кого крадут флаги</h2></div><span class="panel-note">ячейка: текущий раунд · полоски: история</span></div><div id="defense-body" class="exploits-wrap"></div><p class="defense-note">✓ Нет успешных атак последние 3 раунда — возможно, эксплойт исправлен. Новая атака уберёт отметку.</p></section>
+    </section>
+    <section id="ours-view" class="view">
+      <div class="our-heading"><div><p class="eyebrow">КОМАНДНЫЙ ЦЕНТР</p><h2 id="our-name">smd</h2><span id="our-rank" class="panel-note"></span></div><span id="our-status" class="our-live">LIVE</span></div>
+      <div id="our-kpis" class="kpi-grid our-kpis"></div>
+      <div class="our-layout">
+        <section class="panel our-orbit-panel"><div class="panel-head"><div><span class="accent pink"></span><h2>Пульс атак</h2></div><span class="panel-note">голубой — атакуем · красный — атакуют нас</span></div><div id="our-orbit" class="our-orbit"><div class="orbit-ring outer"></div><div class="orbit-ring inner"></div><div id="our-orbit-services"></div><div class="orbit-core"><strong>smd</strong><span id="our-orbit-round">R—</span></div><div id="our-orbit-balls" class="orbit-balls"></div></div></section>
+        <section class="panel our-teams-panel"><div class="panel-head"><div><span class="accent cyan"></span><h2>Команды</h2></div><span class="panel-note">голубой — наша атака · красный — атака на нас</span></div><div id="our-team-orbit" class="our-orbit team-orbit"><div class="orbit-ring outer"></div><div class="orbit-ring inner"></div><div id="our-orbit-teams"></div><div class="orbit-core"><strong>smd</strong><span id="our-team-orbit-round">R—</span></div><div id="our-team-orbit-balls" class="orbit-balls"></div></div></section>
+      </div>
+      <section class="panel our-services-panel"><div class="panel-head"><div><span class="accent violet"></span><h2>Сервисы smd</h2></div><span class="panel-note">итоги борды · активность за 30 раундов</span></div><div id="our-services" class="our-services"></div></section>
+      <div class="our-bottom"><section class="panel"><div class="panel-head"><div><span class="accent cyan"></span><h2>Кого атакует smd</h2></div></div><div id="our-targets" class="our-opponents"></div></section><section class="panel"><div class="panel-head"><div><span class="accent pink"></span><h2>Кто атакует smd</h2></div></div><div id="our-attackers" class="our-opponents"></div></section></div>
+      <section class="panel our-events-panel"><div class="panel-head"><div><span class="accent gold"></span><h2>Последние события</h2></div><span class="panel-note">только smd</span></div><div id="our-events" class="our-events"></div></section>
+    </section>
+    <section id="teams-view" class="view"><div class="teams-toolbar"><div class="search-wrap"><span>⌕</span><input id="team-search" placeholder="Поиск команды" aria-label="Поиск команды"></div><span id="teams-count"></span></div><section class="panel teams-panel"><div class="table-scroll"><table><thead><tr><th>#</th><th>Команда</th><th>Очки</th><th>Украдено</th><th>Потеряно</th><th>Сервисы</th></tr></thead><tbody id="teams-body"></tbody></table></div></section></section>
+  </main>
+  <footer><span>OMCTF // ACADEMY</span><span>Данные: <a href="https://board-academy.ad.omctf.ru/" target="_blank" rel="noreferrer">официальная борда</a> · <a href="https://board-academy.ad.omctf.ru/arena/treasury/visual/" target="_blank" rel="noreferrer">визуализация «Казны»</a></span></footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

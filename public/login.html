@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1b">
+  <title>Вход // OmCTF Live Analytics</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/login.css">
+</head>
+<body class="login-page">
+  <div class="login-shell">
+    <div class="login-brand"><span class="brand-icon">✳</span><span><strong>OMCTF</strong><small>LIVE ANALYTICS</small></span></div>
+    <section class="login-card">
+      <p class="eyebrow">ACADEMY / 2026</p>
+      <h1>Вход в панель</h1>
+      <p class="login-subtitle">Статистика соревнования в прямом эфире</p>
+      <form id="login-form">
+        <label for="username">Логин</label>
+        <input id="username" name="username" autocomplete="username" required autofocus>
+        <label for="password">Пароль</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <p id="login-error" class="login-error" role="alert" hidden></p>
+        <button class="login-submit" type="submit">Войти <span>→</span></button>
+      </form>
+    </section>
+    <p class="login-foot">OMCTF // ACADEMY</p>
+  </div>
+  <script type="module" src="/login.js"></script>
+</body>
+</html>
