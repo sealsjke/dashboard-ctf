@@ -9,12 +9,14 @@ let service = 'all';
 let windowRounds = 10;
 let defenseWindowRounds = 30;
 let search = '';
+let trackedTeamId = null;
+let trackedOptionsSignature = '';
 
 document.querySelectorAll('nav button').forEach(button => button.addEventListener('click', () => {
   tab = button.dataset.tab;
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b === button));
   document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === `${tab}-view`));
-  $('page-title').textContent = {live:'Пульс соревнования',attacks:'Аналитика атак',defense:'Защита сервисов',ours:'smd',teams:'Таблица команд'}[tab];
+  $('page-title').textContent = {live:'Пульс соревнования',attacks:'Аналитика атак',defense:'Защита сервисов',ours:'smd',tracking:'Отслеживание',teams:'Таблица команд'}[tab];
   render();
 }));
 $('window-filters').addEventListener('click', event => {
@@ -38,6 +40,12 @@ $('defense-window-filters').addEventListener('click', event => {
   renderDefense();
 });
 $('team-search').addEventListener('input', event => { search = event.target.value.toLocaleLowerCase('ru'); renderTeams(); });
+$('track-team-select').addEventListener('change', event => {
+  trackedTeamId = event.target.value;
+  $('track-orbit-balls').replaceChildren();
+  $('track-team-orbit-balls').replaceChildren();
+  renderTracking();
+});
 $('logout').addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); location.assign('/login'); });
 
 function kpi(value,label,hint,color) {
@@ -232,13 +240,35 @@ function findOurTeam(board) {
 }
 function renderOurs() {
   if (!state?.scoreboard) return;
-  const board = state.scoreboard;
-  const team = findOurTeam(board);
+  const team = findOurTeam(state.scoreboard);
   if (!team) {
     $('our-name').textContent = ourTeamName;
     $('our-kpis').innerHTML = '<div class="empty">Команда не найдена в таблице</div>';
     return;
   }
+  renderTeamPage('our', team);
+}
+function renderTracking() {
+  if (!state?.scoreboard) return;
+  const teams = state.scoreboard.teams.filter(team => team.name.toLocaleLowerCase('ru') !== ourTeamName);
+  const signature = JSON.stringify(teams.map(team => [team.id, team.name]));
+  const select = $('track-team-select');
+  if (signature !== trackedOptionsSignature) {
+    select.innerHTML = teams.map(team => `<option value="${esc(team.id)}">${esc(team.name)}</option>`).join('');
+    trackedOptionsSignature = signature;
+  }
+  if (!teams.some(team => String(team.id) === trackedTeamId)) trackedTeamId = teams.length ? String(teams[0].id) : null;
+  if (!trackedTeamId) {
+    $('track-name').textContent = 'Нет других команд';
+    $('track-kpis').innerHTML = '<div class="empty">Нет команд для отслеживания</div>';
+    return;
+  }
+  select.value = trackedTeamId;
+  renderTeamPage('track', teams.find(team => String(team.id) === trackedTeamId));
+}
+function renderTeamPage(prefix, team) {
+  const board = state.scoreboard;
+  const get = name => $(`${prefix}-${name}`);
   const round = board.game.real_round;
   const ourId = String(team.id);
   const names = new Map(board.teams.map(item => [String(item.id), item.name]));
@@ -249,48 +279,50 @@ function renderOurs() {
   const stolen = team.tasks.reduce((sum, task) => sum + (task.stolen || 0), 0);
   const lost = team.tasks.reduce((sum, task) => sum + (task.lost || 0), 0);
   const rank = board.teams.findIndex(item => String(item.id) === ourId) + 1;
-  $('our-name').textContent = team.name;
-  $('our-rank').textContent = `Место ${rank} из ${board.teams.length} · R${round}`;
-  $('our-orbit-round').textContent = `R${round}`;
-  $('our-kpis').innerHTML = [
+  get('name').textContent = team.name;
+  get('rank').textContent = `Место ${rank} из ${board.teams.length} · R${round}`;
+  get('orbit-core-name').textContent = team.name;
+  get('team-orbit-core-name').textContent = team.name;
+  get('orbit-round').textContent = `R${round}`;
+  get('kpis').innerHTML = [
     kpi(fmt(team.score?.toFixed(2)),'Очки','по борде','#f5c461'),
     kpi(`#${rank}`,'Место',`из ${board.teams.length} команд`,'#a891fa'),
-    kpi(fmt(stolen),'Украли мы','всего по борде','#59dff0'),
-    kpi(fmt(lost),'Украли у нас','всего по борде','#ff687f'),
+    kpi(fmt(stolen),'Украдено','всего по борде','#59dff0'),
+    kpi(fmt(lost),'Потеряно','всего по борде','#ff687f'),
     kpi(`${stolen - lost >= 0 ? '+' : ''}${fmt(stolen - lost)}`,'Баланс флагов','украли − потеряли','#58df9a'),
     kpi(`${fmt(total(outgoing.filter(a => a.round === round)))} / ${fmt(total(incoming.filter(a => a.round === round)))}`,'Этот раунд','атака / защита','#ed5bdb')
   ].join('');
-  $('our-orbit-services').innerHTML = board.tasks.map((task, index) => {
+  get('orbit-services').innerHTML = board.tasks.map((task, index) => {
     const angle = -Math.PI / 2 + index * 2 * Math.PI / Math.max(1, board.tasks.length);
     const x = 50 + 37 * Math.cos(angle), y = 50 + 37 * Math.sin(angle);
     const out = total(outgoing.filter(attack => String(attack.task_id) === String(task.id) && attack.round === round));
     const received = total(incoming.filter(attack => String(attack.task_id) === String(task.id) && attack.round === round));
     return `<div class="orbit-service" data-task-id="${esc(task.id)}" style="left:${x}%;top:${y}%;--orbit-color:${colors[index % colors.length]}" title="${esc(task.name)} · R${round}: украли ${fmt(out)}, потеряли ${fmt(received)}"><strong>${esc(task.name)}</strong><small>↑${fmt(out)} ↓${fmt(received)}</small></div>`;
   }).join('');
-  $('our-team-orbit-round').textContent = `R${round}`;
+  get('team-orbit-round').textContent = `R${round}`;
   const otherTeams = board.teams.filter(item => String(item.id) !== ourId);
-  $('our-orbit-teams').innerHTML = otherTeams.map((other, index) => {
+  get('orbit-teams').innerHTML = otherTeams.map((other, index) => {
     const angle = -Math.PI / 2 + index * 2 * Math.PI / Math.max(1, otherTeams.length);
     const x = 50 + 42 * Math.cos(angle), y = 50 + 42 * Math.sin(angle);
     const out = total(outgoing.filter(attack => String(attack.victim_id) === String(other.id) && attack.round === round));
     const received = total(incoming.filter(attack => String(attack.attacker_id) === String(other.id) && attack.round === round));
-    return `<div class="orbit-service orbit-team" data-team-id="${esc(other.id)}" style="left:${x}%;top:${y}%;--orbit-color:${colors[index % colors.length]}" title="${esc(other.name)} · R${round}: мы украли ${fmt(out)}, у нас украли ${fmt(received)}"><strong>${esc(other.name)}</strong><small>↑${fmt(out)} ↓${fmt(received)}</small></div>`;
+    return `<div class="orbit-service orbit-team" data-team-id="${esc(other.id)}" style="left:${x}%;top:${y}%;--orbit-color:${colors[index % colors.length]}" title="${esc(other.name)} · R${round}: украдено ${fmt(out)}, потеряно ${fmt(received)}"><strong>${esc(other.name)}</strong><small>↑${fmt(out)} ↓${fmt(received)}</small></div>`;
   }).join('');
-  $('our-services').innerHTML = board.tasks.map((task, index) => {
+  get('services').innerHTML = board.tasks.map((task, index) => {
     const own = team.tasks.find(item => String(item.task_id) === String(task.id));
     const out = total(outgoing.filter(attack => String(attack.task_id) === String(task.id)));
     const received = total(incoming.filter(attack => String(attack.task_id) === String(task.id)));
-    return `<article class="our-service-card" style="--service-color:${colors[index % colors.length]}"><div class="our-service-title"><strong>${esc(task.name)}</strong><span>${esc(own?.status_name || '—')}</span></div><div class="our-service-numbers"><div><small>УКРАЛИ МЫ</small><b>${fmt(own?.stolen || 0)}</b><em>за 30 раундов: ${fmt(out)}</em></div><div><small>ПОТЕРЯЛИ</small><b>${fmt(own?.lost || 0)}</b><em>за 30 раундов: ${fmt(received)}</em></div></div></article>`;
+    return `<article class="our-service-card" style="--service-color:${colors[index % colors.length]}"><div class="our-service-title"><strong>${esc(task.name)}</strong><span>${esc(own?.status_name || '—')}</span></div><div class="our-service-numbers"><div><small>УКРАДЕНО</small><b>${fmt(own?.stolen || 0)}</b><em>за 30 раундов: ${fmt(out)}</em></div><div><small>ПОТЕРЯНО</small><b>${fmt(own?.lost || 0)}</b><em>за 30 раундов: ${fmt(received)}</em></div></div></article>`;
   }).join('');
   const opponents = (attacks, key) => {
     const ranked = group(attacks, key).slice(0, 8);
     return ranked.length ? ranked.map(([id, flags], index) => `<div class="our-opponent"><span>${index + 1}</span><strong title="${esc(names.get(String(id)) || id)}">${esc(names.get(String(id)) || id)}</strong><b>${fmt(flags)}</b></div>`).join('') : '<div class="empty">Атак за 30 раундов нет</div>';
   };
-  $('our-targets').innerHTML = opponents(outgoing, 'victim_id');
-  $('our-attackers').innerHTML = opponents(incoming, 'attacker_id');
+  get('targets').innerHTML = opponents(outgoing, 'victim_id');
+  get('attackers').innerHTML = opponents(incoming, 'attacker_id');
   const events = recent.filter(attack => String(attack.attacker_id) === ourId || String(attack.victim_id) === ourId)
     .sort((a, b) => Date.parse(b.last_at) - Date.parse(a.last_at));
-  $('our-events').innerHTML = events.length ? events.map(attack => {
+  get('events').innerHTML = events.length ? events.map(attack => {
     const out = String(attack.attacker_id) === ourId;
     const opponent = names.get(String(out ? attack.victim_id : attack.attacker_id)) || '—';
     const taskName = tasks.get(String(attack.task_id))?.name || attack.task || attack.task_id;
@@ -327,7 +359,7 @@ function attackDeltas(previous, next, teamId) {
   }
   return [...grouped.values()];
 }
-function animateOurAttacks(events) {
+function animateOurAttacks(events, prefix = 'our') {
   const fly = (orbitId, layerId, selector, dataKey, targetId, event) => {
     const orbit = $(orbitId);
     const core = orbit.querySelector('.orbit-core');
@@ -353,8 +385,8 @@ function animateOurAttacks(events) {
     animation.onfinish = () => ball.remove();
   };
   for (const event of events) {
-    fly('our-orbit', 'our-orbit-balls', '.orbit-service', 'taskId', event.taskId, event);
-    fly('our-team-orbit', 'our-team-orbit-balls', '.orbit-team', 'teamId', event.opponentId, event);
+    fly(`${prefix}-orbit`, `${prefix}-orbit-balls`, '.orbit-service', 'taskId', event.taskId, event);
+    fly(`${prefix}-team-orbit`, `${prefix}-team-orbit-balls`, '.orbit-team', 'teamId', event.opponentId, event);
   }
 }
 function renderTeams() {
@@ -370,7 +402,7 @@ function render() {
   $('game-name').textContent=board.game.name;
   $('header-round').textContent=board.game.real_round;
   $('updated').textContent=`Обновлено ${new Date(state.updatedAt).toLocaleTimeString('ru-RU')}`;
-  if(tab==='live')renderLive();else if(tab==='attacks')renderAttacks();else if(tab==='defense')renderDefense();else if(tab==='ours')renderOurs();else renderTeams();
+  if(tab==='live')renderLive();else if(tab==='attacks')renderAttacks();else if(tab==='defense')renderDefense();else if(tab==='ours')renderOurs();else if(tab==='tracking')renderTracking();else renderTeams();
   updateTimer();
 }
 function updateTimer(){
@@ -390,6 +422,9 @@ function receive(data){
   if (tab === 'ours' && previous?.scoreboard && data.scoreboard) {
     const team = findOurTeam(data.scoreboard);
     if (team) animateOurAttacks(attackDeltas(previous, data, String(team.id)));
+  }
+  if (tab === 'tracking' && previous?.scoreboard && data.scoreboard && trackedTeamId) {
+    animateOurAttacks(attackDeltas(previous, data, trackedTeamId), 'track');
   }
 }
 const stream=new EventSource('/api/stream');
