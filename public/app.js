@@ -201,7 +201,7 @@ function renderDefense() {
     cell.attackers.set(attackerId, attacker);
   }
   const latestRound = board.game.real_round;
-  const activeFrom = latestRound - 2;
+  const activeFrom = latestRound - 9;
   const firstRound = Math.max(1, latestRound - defenseWindowRounds + 1);
   const rounds = Array.from({ length: latestRound - firstRound + 1 }, (_, index) => firstRound + index);
   const windowFlags = cell => cell ? [...cell.rounds].reduce((sum, [round, flags]) => sum + (round >= firstRound && round <= latestRound ? flags : 0), 0) : 0;
